@@ -6,7 +6,6 @@ import com.zapichnyi.oleksii.ae_test_task.service.util.entity.ApiKeyContainer;
 import com.zapichnyi.oleksii.ae_test_task.service.util.entity.AuthToken;
 import com.zapichnyi.oleksii.ae_test_task.service.util.entity.ImageListWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,9 +15,10 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -58,7 +58,7 @@ public class ImageApiClient {
 
     @Scheduled(cron = "${cron.string}")
     public void refreshCache() {
-        List<Image> images = executeImagesRequest();
+        Set<Image> images = executeImagesRequest();
         imageRepository.saveAll(images);
     }
 
@@ -77,8 +77,8 @@ public class ImageApiClient {
 
     }
 
-    private List<Image> executeImagesRequest() {
-        List<Image> images = new ArrayList<>();
+    private Set<Image> executeImagesRequest() {
+        Set<Image> images = new HashSet<>();
         boolean hasMore = true;
         int pageNum = 1;
         while (hasMore) {
@@ -93,8 +93,11 @@ public class ImageApiClient {
                     .collect(Collectors.toList());
 
             images.addAll(page);
-            hasMore = imageListWrapper.isHasMore();
-            pageNum++;
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                pageNum++;
+                hasMore = imageListWrapper.isHasMore();
+            }
         }
         return images;
 
