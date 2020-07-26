@@ -8,5 +8,6 @@ import java.util.List;
 
 @Data
 public class ImageListWrapper {
-    List<Image> pictures = new ArrayList<>();
+   private List<Image> pictures = new ArrayList<>();
+   private boolean hasMore;
 }

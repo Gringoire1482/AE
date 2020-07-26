@@ -6,8 +6,10 @@ import lombok.Setter;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
-import javax.persistence.*;
-import java.util.List;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Setter
 @Getter
@@ -19,21 +21,18 @@ import java.util.List;
 public class Image {
     @EqualsAndHashCode.Include
     @Id
-    String id;
+    private String id;
 
-    String author;
+    private String author;
 
-    String camera;
+    private String camera;
 
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(name = "image_tag",
-            joinColumns = {@JoinColumn(name = "image_id")},
-            inverseJoinColumns = {@JoinColumn(name = "tag_id")})
-    List<Tag> tags;
+    @Column(name = "tag_content")
+    private String tags;
 
-    String cropped_picture;
+    private String cropped_picture;
 
-    String full_picture;
+    private String full_picture;
 
-    int pageNum;
+    private int pageNum;
 }

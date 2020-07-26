@@ -6,6 +6,7 @@ import com.zapichnyi.oleksii.ae_test_task.service.util.entity.ApiKeyContainer;
 import com.zapichnyi.oleksii.ae_test_task.service.util.entity.AuthToken;
 import com.zapichnyi.oleksii.ae_test_task.service.util.entity.ImageListWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,14 +16,18 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 public class ImageApiClient {
     private final RestTemplate restTemplate;
     private final String GET_IMAGES_URL
-            = "http://interview.agileengine.com:80/images";
+            = "http://interview.agileengine.com:80/images?limit=20&page=";
+    private final String GET_IMAGE_URL
+            = "http://interview.agileengine.com:80/images/";
     private final String AUTH_URL =
             "http://interview.agileengine.com:80/auth";
 
@@ -73,20 +78,46 @@ public class ImageApiClient {
     }
 
     private List<Image> executeImagesRequest() {
+        List<Image> images = new ArrayList<>();
+        boolean hasMore = true;
+        int pageNum = 1;
+        while (hasMore) {
+            ResponseEntity<ImageListWrapper> response = restTemplate.exchange(
+                    GET_IMAGES_URL + pageNum, HttpMethod.GET, getEntityWithHeaders(), ImageListWrapper.class);
+            Optional<ImageListWrapper> listWrapper = Optional.ofNullable(response.getBody());
+            ImageListWrapper imageListWrapper = listWrapper.orElseThrow();
+            int finalPageNum = pageNum;
+            List<Image> page = imageListWrapper.getPictures().stream()
+                    .map(this::adjustImage)
+                    .peek(image -> image.setPageNum(finalPageNum))
+                    .collect(Collectors.toList());
 
-        List<Image> images;
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + VALID_TOKEN);
-        HttpEntity entity = new HttpEntity(headers);
-        ResponseEntity<ImageListWrapper> response = restTemplate.exchange(
-                GET_IMAGES_URL, HttpMethod.GET, entity, ImageListWrapper.class);
-
-        Optional<ImageListWrapper> listWrapper = Optional.ofNullable(response.getBody());
-        images = listWrapper.orElseThrow().getPictures();
-
+            images.addAll(page);
+            hasMore = imageListWrapper.isHasMore();
+            pageNum++;
+        }
         return images;
 
 
     }
 
+    private Image adjustImage(Image image) {
+        ResponseEntity<Image> response = restTemplate.exchange(
+                GET_IMAGE_URL + image.getId(), HttpMethod.GET, getEntityWithHeaders(), Image.class);
+        Optional<Image> imageWrapper = Optional.ofNullable(response.getBody());
+        Image detailed = imageWrapper.orElseThrow();
+        image.setAuthor(detailed.getAuthor());
+        image.setCamera(detailed.getCamera());
+        image.setCropped_picture(detailed.getCropped_picture());
+        image.setFull_picture(detailed.getFull_picture());
+        image.setTags(detailed.getTags());
+        return image;
+
+    }
+
+    private HttpEntity getEntityWithHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + VALID_TOKEN);
+        return new HttpEntity(headers);
+    }
 }

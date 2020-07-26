@@ -2,8 +2,10 @@ package com.zapichnyi.oleksii.ae_test_task;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = { SecurityAutoConfiguration.class})
+
 public class AeTestTaskApplication {
 
     public static void main(String[] args) {
